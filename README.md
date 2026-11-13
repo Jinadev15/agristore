@@ -67,6 +67,12 @@ rm -r src/AgriStore.Web/Data/Migrations
 dotnet ef migrations add InitialCreate -p src/AgriStore.Web -o Data/Migrations
 ```
 
+## Deploy (Render)
+
+The `Dockerfile` builds and runs the app. On Render: New Web Service, connect this repo,
+runtime Docker. The SQLite database lives in `/tmp` and is reseeded with demo data on every
+deploy or restart.
+
 ## REST API
 
 Reads are open. Writes need the header `X-Api-Key` (value in `appsettings.json`, `Api:Key`).
