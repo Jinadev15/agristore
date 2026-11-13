@@ -1,0 +1,74 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Overview"; }
+
+<section class="hero">
+    @if (Model.LotsAtRisk == 0)
+    {
+        <h1>All @Model.ActiveLots stored lots are in safe condition.</h1>
+    }
+    else
+    {
+        <h1>@Model.LotsAtRisk @(Model.LotsAtRisk == 1 ? "lot needs" : "lots need") action now. <span class="hero-sub">@Model.TonnesAtRisk.ToString("0.#") tonnes of produce at risk of spoiling.</span></h1>
+    }
+    <dl class="facts">
+        <div><dt>In storage</dt><dd>@Model.TotalStoredTonnes.ToString("#,0.#") t</dd></div>
+        <div><dt>Active lots</dt><dd>@Model.ActiveLots</dd></div>
+        <div><dt>Storage units</dt><dd>@Model.Units.Count</dd></div>
+    </dl>
+</section>
+
+<div class="row g-4">
+    <section class="col-lg-7">
+        <div class="section-head">
+            <h2>Needs attention</h2>
+            <a asp-controller="StockLots" asp-action="Index" asp-route-minRisk="Medium">See all</a>
+        </div>
+        @if (Model.TopRisks.Count == 0)
+        {
+            <p class="empty">No lots at medium risk or above. Keep sensor readings coming in to stay ahead.</p>
+        }
+        <ol class="attention">
+            @foreach (var item in Model.TopRisks)
+            {
+                <li class="attention-item edge-@item.Risk.Level.ToString().ToLower()">
+                    <div class="attention-main">
+                        <a class="attention-title" asp-controller="StockLots" asp-action="Details" asp-route-id="@item.Lot.Id">
+                            @item.Lot.QuantityTonnes.ToString("0.#") t @item.Lot.Crop!.Name
+                        </a>
+                        <span class="muted">@item.Lot.FarmerName, @item.Lot.StorageUnit!.Name</span>
+                        <ul class="reasons">
+                            @foreach (var reason in item.Risk.Reasons) { <li>@reason</li> }
+                        </ul>
+                        <p class="advice">@item.Risk.Recommendation</p>
+                    </div>
+                    <partial name="_RiskBadge" model="item.Risk" />
+                </li>
+            }
+        </ol>
+    </section>
+
+    <section class="col-lg-5">
+        <div class="section-head">
+            <h2>Storage units</h2>
+            <a asp-controller="StorageUnits" asp-action="Index">Manage</a>
+        </div>
+        @foreach (var s in Model.Units)
+        {
+            <a class="unit-row" asp-controller="StorageUnits" asp-action="Details" asp-route-id="@s.Unit.Id">
+                <div class="unit-row-top">
+                    <strong>@s.Unit.Name</strong>
+                    @if (s.LotsOutOfRange > 0) { <span class="tag-warn">@s.LotsOutOfRange out of range</span> }
+                </div>
+                <div class="gauge" aria-label="@s.FillPercent% full"><div style="width:@Math.Min(s.FillPercent, 100)%"></div></div>
+                <div class="unit-row-meta">
+                    <span>@s.StoredTonnes.ToString("#,0.#") / @s.Unit.CapacityTonnes.ToString("#,0") t</span>
+                    @if (s.Latest is not null)
+                    {
+                        <span>@s.Latest.TemperatureC.ToString("0.#")°C, @s.Latest.HumidityPercent.ToString("0")% RH</span>
+                    }
+                    else { <span>No readings yet</span> }
+                </div>
+            </a>
+        }
+    </section>
+</div>

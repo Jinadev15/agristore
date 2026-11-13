@@ -1,0 +1,26 @@
+@model List<CropProfile>
+@{ ViewData["Title"] = "Crops"; var admin = User.IsInRole(DbSeeder.AdminRole); }
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Crop storage guide</h1>
+        <p class="muted">The safe range each crop needs. Risk scores compare sensor readings against these values.</p>
+    </div>
+    @if (admin) { <a class="btn btn-primary" asp-action="Create">Add crop</a> }
+</div>
+<div class="table-responsive">
+<table class="table data">
+    <thead><tr><th>Crop</th><th class="num">Temperature</th><th class="num">Humidity</th><th class="num">Shelf life</th>@if (admin) { <th></th> }</tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        <tr>
+            <td>@c.Name</td>
+            <td class="num">@c.MinTempC to @c.MaxTempC °C</td>
+            <td class="num">@c.MinHumidity to @c.MaxHumidity %</td>
+            <td class="num">@c.ShelfLifeDays days</td>
+            @if (admin) { <td><a asp-action="Edit" asp-route-id="@c.Id">Edit</a></td> }
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

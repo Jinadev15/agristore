@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AgriStore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&display=swap" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="topbar">
+        <nav class="navbar navbar-expand-lg container">
+            <a class="brand" asp-controller="Home" asp-action="Index">
+                <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2c-4 5-4 9 0 13 4-4 4-8 0-13Zm0 13v9M7 12c0 4 2 6 6 6M19 12c0 4-2 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                AgriStore
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="nav" class="collapse navbar-collapse">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    var c = ViewContext.RouteData.Values["controller"]?.ToString();
+                    <ul class="navbar-nav me-auto">
+                        <li><a class="nav-link @(c == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Overview</a></li>
+                        <li><a class="nav-link @(c == "StockLots" ? "active" : "")" asp-controller="StockLots" asp-action="Index">Stock</a></li>
+                        <li><a class="nav-link @(c == "StorageUnits" ? "active" : "")" asp-controller="StorageUnits" asp-action="Index">Storage units</a></li>
+                        <li><a class="nav-link @(c == "Readings" ? "active" : "")" asp-controller="Readings" asp-action="Index">Sensor readings</a></li>
+                        <li><a class="nav-link @(c == "Crops" ? "active" : "")" asp-controller="Crops" asp-action="Index">Crops</a></li>
+                    </ul>
+                }
+                else
+                {
+                    <span class="me-auto"></span>
+                }
+                <partial name="_LoginPartial" />
+            </div>
+        </nav>
+    </header>
+
+    <main class="container py-4">
+        @if (TempData["Message"] is string message)
+        {
+            <div class="flash flash-ok" role="status">@message</div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="flash flash-error" role="alert">@error</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="container footer-note">
+        AgriStore: post-harvest storage monitoring. CSE253 .NET project. <a href="/swagger">API docs</a>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

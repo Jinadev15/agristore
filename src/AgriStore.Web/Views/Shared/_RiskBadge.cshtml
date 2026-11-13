@@ -1,0 +1,2 @@
+@model RiskAssessment
+<span class="risk risk-@Model.Level.ToString().ToLower()" title="Risk score @Model.Score/100">@Model.Level <b>@Model.Score</b></span>

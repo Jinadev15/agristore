@@ -1,0 +1,26 @@
+@model List<SensorReading>
+@{ ViewData["Title"] = "Sensor readings"; }
+<div class="page-head">
+    <h1 class="page-title">Sensor readings</h1>
+    <a class="btn btn-primary" asp-action="Create">Add reading</a>
+</div>
+<form method="get" class="filters">
+    <select name="storageUnitId" asp-items="ViewBag.Units" class="form-select" aria-label="Storage unit"><option value="">All storage units</option></select>
+    <button class="btn btn-outline-primary">Show</button>
+</form>
+<p class="muted">Latest 100 readings. Sensors can send readings to <code>POST /api/readings</code> with an <code>X-Api-Key</code> header.</p>
+@if (Model.Count == 0) { <p class="empty">No readings yet.</p> }
+else
+{
+    <div class="table-responsive">
+    <table class="table data">
+        <thead><tr><th>Recorded at</th><th>Storage unit</th><th class="num">Temperature</th><th class="num">Humidity</th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr><td>@r.RecordedAt.ToString("d MMM yyyy, HH:mm")</td><td>@r.StorageUnit!.Name</td><td class="num">@r.TemperatureC.ToString("0.0") °C</td><td class="num">@r.HumidityPercent.ToString("0.0") %</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

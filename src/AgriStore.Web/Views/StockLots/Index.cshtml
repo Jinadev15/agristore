@@ -1,0 +1,66 @@
+@model List<LotWithRisk>
+@{
+    ViewData["Title"] = "Stock";
+    var history = (List<StockLot>)ViewBag.History;
+}
+<div class="page-head">
+    <h1 class="page-title">Stock in storage</h1>
+    <a class="btn btn-primary" asp-action="Create">Record new lot</a>
+</div>
+
+<form method="get" class="filters">
+    <input name="search" value="@ViewBag.Search" class="form-control" placeholder="Search farmer or crop" aria-label="Search farmer or crop" />
+    <select name="minRisk" class="form-select" aria-label="Minimum risk">
+        <option value="">Any risk</option>
+        @foreach (var level in Enum.GetValues<RiskLevel>().Skip(1))
+        {
+            <option value="@level" selected="@(ViewBag.MinRisk is RiskLevel l && l == level)">@level and above</option>
+        }
+    </select>
+    <button class="btn btn-outline-primary">Filter</button>
+</form>
+
+@if (Model.Count == 0) { <p class="empty">No lots match. Clear the filters or record a new lot.</p> }
+else
+{
+    <div class="table-responsive">
+    <table class="table data">
+        <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var x in Model)
+        {
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
+                <td>@x.Lot.FarmerName</td>
+                <td>@x.Lot.StorageUnit!.Name</td>
+                <td class="num">@x.Lot.QuantityTonnes.ToString("0.#") t</td>
+                <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
+                <td><partial name="_RiskBadge" model="x.Risk" /></td>
+                <td>
+                    <form asp-action="SetStatus" asp-route-id="@x.Lot.Id" method="post">
+                        <input type="hidden" name="status" value="Dispatched" />
+                        <button class="btn btn-sm btn-outline-primary">Mark dispatched</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}
+
+@if (history.Count > 0)
+{
+    <h2 class="mt-5">Recently closed</h2>
+    <div class="table-responsive">
+    <table class="table data quiet">
+        <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Outcome</th></tr></thead>
+        <tbody>
+        @foreach (var l in history)
+        {
+            <tr><td>@l.Crop!.Name</td><td>@l.FarmerName</td><td>@l.StorageUnit!.Name</td><td class="num">@l.QuantityTonnes.ToString("0.#") t</td><td>@l.Status</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

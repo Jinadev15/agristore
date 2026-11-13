@@ -1,0 +1,15 @@
+@model SensorReading
+@{ ViewData["Title"] = "Add reading"; }
+<h1 class="page-title">Add a sensor reading</h1>
+<form asp-action="Create" method="post" class="form-panel">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="StorageUnitId" class="form-label"></label><select asp-for="StorageUnitId" asp-items="ViewBag.Units" class="form-select"><option value="">Choose a unit</option></select><span asp-validation-for="StorageUnitId" class="text-danger"></span></div>
+    <div class="row">
+        <div class="col-sm-6 mb-3"><label asp-for="TemperatureC" class="form-label"></label><input asp-for="TemperatureC" class="form-control" step="0.1" /><span asp-validation-for="TemperatureC" class="text-danger"></span></div>
+        <div class="col-sm-6 mb-3"><label asp-for="HumidityPercent" class="form-label"></label><input asp-for="HumidityPercent" class="form-control" step="0.1" /><span asp-validation-for="HumidityPercent" class="text-danger"></span></div>
+    </div>
+    <div class="mb-3"><label asp-for="RecordedAt" class="form-label"></label><input asp-for="RecordedAt" class="form-control" /><span asp-validation-for="RecordedAt" class="text-danger"></span></div>
+    <button class="btn btn-primary">Save reading</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

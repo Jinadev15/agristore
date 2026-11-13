@@ -1,0 +1,82 @@
+@model StorageUnit
+@{
+    ViewData["Title"] = Model.Name;
+    var readings = (List<SensorReading>)ViewBag.Readings;
+    var lots = (List<LotWithRisk>)ViewBag.Lots;
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">@Model.Name</h1>
+        <p class="muted">@Model.Type.Label() in @Model.Location. Capacity @Model.CapacityTonnes.ToString("#,0") tonnes.</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn-outline-primary" asp-controller="Readings" asp-action="Create" asp-route-storageUnitId="@Model.Id">Add reading</a>
+        <a class="btn btn-primary" asp-controller="StockLots" asp-action="Create" asp-route-storageUnitId="@Model.Id">Store a lot here</a>
+        @if (User.IsInRole(DbSeeder.AdminRole))
+        {
+            <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Delete this storage unit and its readings?')">
+                <button class="btn btn-outline-danger">Delete</button>
+            </form>
+        }
+    </div>
+</div>
+
+<section class="panel">
+    <h2>Last 7 days</h2>
+    @if (readings.Count == 0) { <p class="empty">No readings in the last 7 days. Add one or connect a sensor to <code>POST /api/readings</code>.</p> }
+    else { <canvas id="chart" height="110" aria-label="Temperature and humidity over the last 7 days"></canvas> }
+</section>
+
+<section class="mt-4">
+    <h2>Lots in this unit</h2>
+    @if (lots.Count == 0) { <p class="empty">Nothing stored here right now.</p> }
+    else
+    {
+        <div class="table-responsive">
+        <table class="table data">
+            <thead><tr><th>Crop</th><th>Farmer</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th></tr></thead>
+            <tbody>
+            @foreach (var x in lots)
+            {
+                <tr>
+                    <td><a asp-controller="StockLots" asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
+                    <td>@x.Lot.FarmerName</td>
+                    <td class="num">@x.Lot.QuantityTonnes.ToString("0.#") t</td>
+                    <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
+                    <td><partial name="_RiskBadge" model="x.Risk" /></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    @if (readings.Count > 0)
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+        <script>
+            const data = @Json.Serialize(readings.Select(r => new { t = r.RecordedAt.ToString("dd MMM HH:mm"), temp = r.TemperatureC, hum = r.HumidityPercent }));
+            new Chart(document.getElementById('chart'), {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.t),
+                    datasets: [
+                        { label: 'Temperature (°C)', data: data.map(d => d.temp), borderColor: '#b5541c', yAxisID: 'y', tension: .3, pointRadius: 0 },
+                        { label: 'Humidity (%)', data: data.map(d => d.hum), borderColor: '#2f6b8a', yAxisID: 'y1', tension: .3, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 7 } },
+                        y: { position: 'left', title: { display: true, text: '°C' } },
+                        y1: { position: 'right', title: { display: true, text: '% RH' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        </script>
+    }
+}
