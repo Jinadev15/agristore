@@ -9,6 +9,8 @@ RUN dotnet publish src/AgriStore.Web/AgriStore.Web.csproj -c Release -o /app --n
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
+# Show times in Indian Standard Time (Render servers run in UTC).
+ENV TZ=Asia/Kolkata
 COPY --from=build /app .
 # Render sends traffic to $PORT (default 10000) over its own HTTPS proxy.
 # The image runs as a non-root user, so SQLite lives in /tmp (reset on each deploy; demo data is reseeded).

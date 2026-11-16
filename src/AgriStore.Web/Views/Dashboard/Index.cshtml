@@ -1,0 +1,95 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Overview";
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Good morning." : hour < 17 ? "Good afternoon." : "Good evening.";
+    var headline = Model.LotsAtRisk switch
+    {
+        0 => "Every lot is in safe condition.",
+        1 => "One lot needs you today.",
+        _ => $"{Model.LotsAtRisk} lots need you today."
+    };
+    var outOfRange = Model.Units.Count(u => u.LotsOutOfRange > 0);
+}
+
+<section class="band band--indigo page-band" data-rain>
+    <div class="wrap">
+        <p class="page-sub" style="margin: 0 0 12px">@greeting</p>
+        <h1 class="page-title" data-split>@headline</h1>
+        <div class="facts">
+            <div class="fact"><b data-count="@Model.TotalStoredTonnes.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" data-decimals="@(Model.TotalStoredTonnes % 1 == 0 ? 0 : 1)" data-suffix=" t">@Model.TotalStoredTonnes.ToString("#,0.#") t</b>in storage</div>
+            <div class="fact"><b class="@(Model.TonnesAtRisk > 0 ? "hot" : "")" data-count="@Model.TonnesAtRisk.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" data-decimals="@(Model.TonnesAtRisk % 1 == 0 ? 0 : 1)" data-suffix=" t">@Model.TonnesAtRisk.ToString("#,0.#") t</b>at high risk</div>
+            <div class="fact"><b>@outOfRange of @Model.Units.Count</b>units out of range</div>
+            <div class="fact"><b data-count="@Model.ActiveLots">@Model.ActiveLots</b>active lots</div>
+        </div>
+    </div>
+</section>
+
+<section class="band band--saffron" style="padding-block: 48px 40px">
+    <div class="wrap">
+        <div class="section-head">
+            <h2 class="h2">@(Model.TopRisks.Count == 0 ? "Nothing to move" : "Move these first")</h2>
+            <a class="link" href="/StockLots?minRisk=Medium" style="font-weight: 600; color: var(--ink)">All lots at risk</a>
+        </div>
+        @if (Model.TopRisks.Count == 0)
+        {
+            <div class="empty"><strong>No lot is at medium risk or above.</strong>Keep sensor readings coming in so it stays that way.</div>
+        }
+        else
+        {
+            <div data-stagger>
+                @foreach (var item in Model.TopRisks)
+                {
+                    var tone = item.Risk.Level.ToString().ToLowerInvariant();
+                    <article class="lot-row">
+                        <span class="score-num" aria-label="Risk score @item.Risk.Score">@item.Risk.Score</span>
+                        <div>
+                            <h3><a asp-controller="StockLots" asp-action="Details" asp-route-id="@item.Lot.Id">@item.Lot.QuantityTonnes.ToString("0.##") t @item.Lot.Crop!.Name.ToLowerInvariant() from @item.Lot.FarmerName</a></h3>
+                            <p>@item.Lot.StorageUnit!.Name. @(item.Risk.Reasons.Count > 0 ? item.Risk.Reasons[0] + "." : "") @item.Risk.Recommendation</p>
+                        </div>
+                        <form asp-controller="StockLots" asp-action="SetStatus" asp-route-id="@item.Lot.Id" method="post">
+                            <input type="hidden" name="status" value="Dispatched" />
+                            <button class="btn btn--line btn--small" type="submit">Mark dispatched</button>
+                        </form>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="content">
+    <div class="wrap">
+        <div class="section-head">
+            <h2 class="h2">Storage units</h2>
+            <a class="link" asp-controller="StorageUnits" asp-action="Index" style="font-weight: 600">Manage units</a>
+        </div>
+        @if (Model.Units.Count == 0)
+        {
+            <div class="empty"><strong>No storage units yet.</strong>An admin can add the first cold store, silo or godown.</div>
+        }
+        <div class="grid-auto" data-stagger>
+            @foreach (var s in Model.Units)
+            {
+                var tempTone = s.LotsOutOfRange > 0 ? "tone-high" : "tone-low";
+                <a class="card spot unit-card" asp-controller="StorageUnits" asp-action="Details" asp-route-id="@s.Unit.Id">
+                    <div style="font-weight: 600">@s.Unit.Name</div>
+                    <div class="muted" style="font-size: 14px">@s.Unit.Type.Label(), @s.Unit.Location</div>
+                    @if (s.Latest is not null)
+                    {
+                        <div class="temp @tempTone">@s.Latest.TemperatureC.ToString("0.#")°</div>
+                        <div class="meta">@s.Latest.HumidityPercent.ToString("0")% humidity</div>
+                    }
+                    else
+                    {
+                        <div class="temp muted">No data</div>
+                        <div class="meta">No sensor readings yet</div>
+                    }
+                    <div class="bar" role="img" aria-label="@s.FillPercent% full"><span data-bar-to="@Math.Min(s.FillPercent, 100)" style="width:@Math.Min(s.FillPercent, 100)%"></span></div>
+                    <div class="bar-caption">@s.StoredTonnes.ToString("#,0.#") of @s.Unit.CapacityTonnes.ToString("#,0") t</div>
+                    @if (s.LotsOutOfRange > 0) { <span class="warn">@s.LotsOutOfRange @(s.LotsOutOfRange == 1 ? "lot" : "lots") outside safe range</span> }
+                </a>
+            }
+        </div>
+    </div>
+</section>

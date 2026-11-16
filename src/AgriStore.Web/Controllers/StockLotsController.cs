@@ -49,9 +49,14 @@ public class StockLotsController(ApplicationDbContext db, InsightService insight
         return View("Form", lot);
     }
 
+    /// <summary>Refresh or Back after a failed save lands here: send the user back to the form.</summary>
+    [HttpGet]
+    public IActionResult Save(int? id) => id is > 0 ? RedirectToAction(nameof(Edit), new { id }) : RedirectToAction(nameof(Create));
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(StockLot lot)
     {
+        lot.FarmerName = lot.FarmerName?.Trim() ?? "";
         if (lot.StoredOn.Date > DateTime.Today)
             ModelState.AddModelError(nameof(lot.StoredOn), "Stored date cannot be in the future.");
 
@@ -75,8 +80,22 @@ public class StockLotsController(ApplicationDbContext db, InsightService insight
             return View("Form", lot);
         }
 
-        if (lot.Id == 0) db.StockLots.Add(lot);
-        else db.StockLots.Update(lot);
+        if (lot.Id == 0)
+        {
+            lot.Status = LotStatus.Stored;
+            db.StockLots.Add(lot);
+        }
+        else
+        {
+            // Copy only the fields the form edits; status changes go through SetStatus.
+            var existing = await db.StockLots.FindAsync(lot.Id);
+            if (existing is null) return NotFound();
+            existing.FarmerName = lot.FarmerName;
+            existing.CropProfileId = lot.CropProfileId;
+            existing.StorageUnitId = lot.StorageUnitId;
+            existing.QuantityTonnes = lot.QuantityTonnes;
+            existing.StoredOn = lot.StoredOn;
+        }
         await db.SaveChangesAsync();
 
         TempData["Message"] = "Stock lot saved.";
@@ -87,13 +106,38 @@ public class StockLotsController(ApplicationDbContext db, InsightService insight
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> SetStatus(int id, LotStatus status)
     {
+        if (!Enum.IsDefined(status)) return BadRequest();
         var lot = await db.StockLots.FindAsync(id);
         if (lot is null) return NotFound();
 
+        if (status == LotStatus.Stored && lot.Status != LotStatus.Stored)
+        {
+            // Moving a closed lot back into stock must still fit in its unit.
+            var unit = await db.StorageUnits.FindAsync(lot.StorageUnitId);
+            var used = await db.StockLots
+                .Where(l => l.StorageUnitId == lot.StorageUnitId && l.Status == LotStatus.Stored)
+                .SumAsync(l => l.QuantityTonnes);
+            if (unit is not null && used + lot.QuantityTonnes > unit.CapacityTonnes)
+            {
+                TempData["Error"] = $"{unit.Name} has only {unit.CapacityTonnes - used:0.##} t free, so lot #{id} cannot go back into stock.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
         lot.Status = status;
         await db.SaveChangesAsync();
-        TempData["Message"] = $"Lot #{id} marked as {status}.";
-        return RedirectToAction(nameof(Index));
+        TempData["Message"] = status switch
+        {
+            LotStatus.Dispatched => $"Lot #{id} marked dispatched.",
+            LotStatus.Spoiled => $"Lot #{id} recorded as spoiled.",
+            _ => $"Lot #{id} is back in stock."
+        };
+
+        // Go back to the page the button was on (overview, stock list or lot), never off-site.
+        var referer = Request.Headers.Referer.ToString();
+        return Uri.TryCreate(referer, UriKind.Absolute, out var from) && from.Host == Request.Host.Host && Url.IsLocalUrl(from.PathAndQuery)
+            ? LocalRedirect(from.PathAndQuery)
+            : RedirectToAction(nameof(Index));
     }
 
     [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = DbSeeder.AdminRole)]

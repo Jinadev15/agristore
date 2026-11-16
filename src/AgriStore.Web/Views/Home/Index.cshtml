@@ -1,74 +1,93 @@
 @model DashboardViewModel
-@{ ViewData["Title"] = "Overview"; }
+@{
+    ViewData["Title"] = "";
+    ViewData["Landing"] = true;
+    var crops = (List<CropProfile>)ViewBag.Crops;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var worst = Model.TopRisks.FirstOrDefault();
+    var worstUnit = worst is null ? null : Model.Units.FirstOrDefault(u => u.Unit.Id == worst.Lot.StorageUnitId);
+    // Temperature scale for the crop guide bars: -5 °C to 30 °C.
+    string RangeStyle(CropProfile c) =>
+        $"left:{Math.Clamp((c.MinTempC + 5) / 35 * 100, 0, 100):0.#}%;width:{Math.Max((c.MaxTempC - c.MinTempC) / 35 * 100, 2):0.#}%";
+}
 
-<section class="hero">
-    @if (Model.LotsAtRisk == 0)
-    {
-        <h1>All @Model.ActiveLots stored lots are in safe condition.</h1>
-    }
-    else
-    {
-        <h1>@Model.LotsAtRisk @(Model.LotsAtRisk == 1 ? "lot needs" : "lots need") action now. <span class="hero-sub">@Model.TonnesAtRisk.ToString("0.#") tonnes of produce at risk of spoiling.</span></h1>
-    }
-    <dl class="facts">
-        <div><dt>In storage</dt><dd>@Model.TotalStoredTonnes.ToString("#,0.#") t</dd></div>
-        <div><dt>Active lots</dt><dd>@Model.ActiveLots</dd></div>
-        <div><dt>Storage units</dt><dd>@Model.Units.Count</dd></div>
-    </dl>
+<section class="band band--indigo hero" data-rain data-bg="#1F2A5C">
+    <div class="wrap">
+        <h1 data-split>After the harvest comes the hardest part.</h1>
+        <div class="hero-foot" data-reveal>
+            <p>Grain and produce sit in godowns for months. Heat and damp creep in unseen. AgriStore watches every storage unit and tells you which lot to move before it is lost.</p>
+            <div class="actions">
+                <a class="btn btn--primary btn--big" data-magnetic href="@(signedIn ? "/Dashboard" : "/Identity/Account/Login")">@(signedIn ? "Open the dashboard" : "Sign in to the dashboard")</a>
+                <a class="btn btn--ghost btn--big" href="#steps">How it works</a>
+            </div>
+        </div>
+    </div>
+    <span class="scroll-cue" aria-hidden="true"></span>
 </section>
 
-<div class="row g-4">
-    <section class="col-lg-7">
-        <div class="section-head">
-            <h2>Needs attention</h2>
-            <a asp-controller="StockLots" asp-action="Index" asp-route-minRisk="Medium">See all</a>
+<section id="story" class="band band--saffron" data-bg="#F2A007">
+    <div class="wrap split" style="align-items: flex-end; gap: 56px">
+        <div class="main">
+            <div class="big-number" data-drift><span data-count="@Model.TonnesAtRisk.ToString("0", System.Globalization.CultureInfo.InvariantCulture)">@Model.TonnesAtRisk.ToString("#,0")</span></div>
+            <p class="story-line" data-reveal>tonnes in storage are at high risk of spoiling right now.</p>
         </div>
-        @if (Model.TopRisks.Count == 0)
-        {
-            <p class="empty">No lots at medium risk or above. Keep sensor readings coming in to stay ahead.</p>
-        }
-        <ol class="attention">
-            @foreach (var item in Model.TopRisks)
+        <div class="side" style="font-size: 18px; line-height: 1.6" data-reveal>
+            @if (worst is not null && worstUnit?.Latest is not null)
             {
-                <li class="attention-item edge-@item.Risk.Level.ToString().ToLower()">
-                    <div class="attention-main">
-                        <a class="attention-title" asp-controller="StockLots" asp-action="Details" asp-route-id="@item.Lot.Id">
-                            @item.Lot.QuantityTonnes.ToString("0.#") t @item.Lot.Crop!.Name
-                        </a>
-                        <span class="muted">@item.Lot.FarmerName, @item.Lot.StorageUnit!.Name</span>
-                        <ul class="reasons">
-                            @foreach (var reason in item.Risk.Reasons) { <li>@reason</li> }
-                        </ul>
-                        <p class="advice">@item.Risk.Recommendation</p>
-                    </div>
-                    <partial name="_RiskBadge" model="item.Risk" />
-                </li>
+                <p style="margin-bottom: 18px">@worstUnit.Unit.Name reads @worstUnit.Latest.TemperatureC.ToString("0.#") °C. @worst.Lot.Crop!.Name keeps at @worst.Lot.Crop.MinTempC.ToString("0.#") to @worst.Lot.Crop.MaxTempC.ToString("0.#") °C.</p>
             }
-        </ol>
-    </section>
-
-    <section class="col-lg-5">
-        <div class="section-head">
-            <h2>Storage units</h2>
-            <a asp-controller="StorageUnits" asp-action="Index">Manage</a>
+            <p>Nobody notices, because nobody reads the thermometer at 3 a.m. AgriStore reads it every six hours and does the arithmetic for you.</p>
         </div>
-        @foreach (var s in Model.Units)
+    </div>
+</section>
+
+<section id="steps" class="band band--mist" data-bg="#E8EBF4">
+    <div class="wrap">
+        <h2 class="display" data-split>Three things happen every six hours.</h2>
+        <div class="steps" data-stagger>
+            <div class="step"><div class="step-n" style="color: var(--ink)">1</div><h3>A sensor reports</h3><p>Temperature and humidity arrive through the API, or a storekeeper types them in.</p></div>
+            <div class="step"><div class="step-n" style="color: var(--paddy)">2</div><h3>Every lot is scored</h3><p>Age, heat, damp and missing data become one number from 0 to 100, with the reasons spelled out.</p></div>
+            <div class="step"><div class="step-n" style="color: #C26A00">3</div><h3>You get the next move</h3><p>The overview opens on the lots that cost most if ignored, and says what to do about each.</p></div>
+        </div>
+    </div>
+</section>
+
+<section id="guide" class="band band--paddy" data-bg="#2E6B3B">
+    <div class="wrap">
+        <h2 class="display" data-split style="margin-bottom: 48px">What each crop can take.</h2>
+        @if (crops.Count == 0)
         {
-            <a class="unit-row" asp-controller="StorageUnits" asp-action="Details" asp-route-id="@s.Unit.Id">
-                <div class="unit-row-top">
-                    <strong>@s.Unit.Name</strong>
-                    @if (s.LotsOutOfRange > 0) { <span class="tag-warn">@s.LotsOutOfRange out of range</span> }
-                </div>
-                <div class="gauge" aria-label="@s.FillPercent% full"><div style="width:@Math.Min(s.FillPercent, 100)%"></div></div>
-                <div class="unit-row-meta">
-                    <span>@s.StoredTonnes.ToString("#,0.#") / @s.Unit.CapacityTonnes.ToString("#,0") t</span>
-                    @if (s.Latest is not null)
-                    {
-                        <span>@s.Latest.TemperatureC.ToString("0.#")°C, @s.Latest.HumidityPercent.ToString("0")% RH</span>
-                    }
-                    else { <span>No readings yet</span> }
-                </div>
-            </a>
+            <p class="empty">No crop profiles yet. An admin can add them on the Crops page.</p>
         }
-    </section>
-</div>
+        else
+        {
+            <div class="crop-row crop-row--head"><span>Crop</span><span>Temperature</span><span>Humidity</span><span>Shelf life</span></div>
+            <div data-stagger>
+                @foreach (var c in crops)
+                {
+                    <div class="crop-row">
+                        <span class="serif">@c.Name</span>
+                        <span>@c.MinTempC.ToString("0.#") to @c.MaxTempC.ToString("0.#") °C<span class="range" aria-hidden="true"><span style="@RangeStyle(c)"></span></span></span>
+                        <span>@c.MinHumidity.ToString("0") to @c.MaxHumidity.ToString("0")%</span>
+                        <span>@c.ShelfLifeDays days</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="band band--indigo" data-rain data-bg="#161E45">
+    <div class="wrap">
+        <h2 class="display" data-split style="font-size: clamp(48px, 7vw, 104px); max-width: 12ch">See what needs moving today.</h2>
+        <div class="facts" data-reveal>
+            <div class="fact"><b data-count="@Model.TotalStoredTonnes.ToString("0", System.Globalization.CultureInfo.InvariantCulture)" data-suffix=" t">@Model.TotalStoredTonnes.ToString("#,0") t</b>in storage</div>
+            <div class="fact"><b data-count="@Model.ActiveLots">@Model.ActiveLots</b>active lots</div>
+            <div class="fact"><b class="hot" data-count="@Model.LotsAtRisk">@Model.LotsAtRisk</b>need action</div>
+        </div>
+        <div class="actions" style="margin-top: 48px" data-reveal>
+            <a class="btn btn--primary btn--big" data-magnetic href="@(signedIn ? "/Dashboard" : "/Identity/Account/Login")">@(signedIn ? "Open the dashboard" : "Sign in to the dashboard")</a>
+            <a class="btn btn--ghost btn--big" href="/swagger">Explore the API</a>
+        </div>
+    </div>
+</section>

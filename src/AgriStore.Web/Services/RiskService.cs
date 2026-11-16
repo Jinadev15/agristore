@@ -32,12 +32,12 @@ public class RiskService : IRiskService
         if (daysLeft <= 0)
         {
             score += 60;
-            reasons.Add($"Past shelf life by {-daysLeft} day(s)");
+            reasons.Add($"Past shelf life by {Days(-daysLeft)}");
         }
         else
         {
             score += Math.Clamp(ageRatio, 0, 1) * 50;
-            if (ageRatio >= 0.75) reasons.Add($"Only {daysLeft} day(s) of shelf life left");
+            if (ageRatio >= 0.75) reasons.Add($"Only {Days(daysLeft)} of shelf life left");
         }
 
         // 2. Storage conditions, from the latest sensor reading.
@@ -76,6 +76,8 @@ public class RiskService : IRiskService
 
         return new RiskAssessment(finalScore, level, daysLeft, reasons, Recommend(level));
     }
+
+    private static string Days(int n) => n == 1 ? "1 day" : $"{n} days";
 
     private static double DistanceOutside(double value, double min, double max) =>
         value < min ? min - value : value > max ? value - max : 0;

@@ -1,7 +1,9 @@
 using AgriStore.Web.Data;
 using AgriStore.Web.Middleware;
 using AgriStore.Web.Services;
-using Microsoft.AspNetCore.Authorization;
+using System.Globalization;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,20 +26,27 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.Password.RequireNonAlphanumeric = false;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Every page needs a signed-in user unless it says [AllowAnonymous].
-builder.Services.AddAuthorizationBuilder()
-    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 // Our own services (dependency injection).
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IRiskService, RiskService>();
 builder.Services.AddScoped<InsightService>();
 
-builder.Services.AddControllersWithViews();
+// Every controller action needs a signed-in user unless it says [AllowAnonymous].
+// (A filter rather than a fallback policy, so unknown URLs still get a proper 404 page.)
+builder.Services.AddControllersWithViews(options => options.Filters.Add(new AuthorizeFilter()));
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var india = new CultureInfo("en-IN");
+    options.DefaultRequestCulture = new RequestCulture(india);
+    options.SupportedCultures = options.SupportedUICultures = [india];
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -57,6 +66,9 @@ else
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+app.UseStatusCodePagesWithReExecute("/Home/Status/{0}");
+app.UseRequestLocalization();
 
 app.UseSwagger();
 app.UseSwaggerUI();

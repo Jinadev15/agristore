@@ -1,15 +1,25 @@
 @model SensorReading
 @{ ViewData["Title"] = "Add reading"; }
-<h1 class="page-title">Add a sensor reading</h1>
-<form asp-action="Create" method="post" class="form-panel">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="mb-3"><label asp-for="StorageUnitId" class="form-label"></label><select asp-for="StorageUnitId" asp-items="ViewBag.Units" class="form-select"><option value="">Choose a unit</option></select><span asp-validation-for="StorageUnitId" class="text-danger"></span></div>
-    <div class="row">
-        <div class="col-sm-6 mb-3"><label asp-for="TemperatureC" class="form-label"></label><input asp-for="TemperatureC" class="form-control" step="0.1" /><span asp-validation-for="TemperatureC" class="text-danger"></span></div>
-        <div class="col-sm-6 mb-3"><label asp-for="HumidityPercent" class="form-label"></label><input asp-for="HumidityPercent" class="form-control" step="0.1" /><span asp-validation-for="HumidityPercent" class="text-danger"></span></div>
+@section Band {
+    <nav class="crumbs" aria-label="Breadcrumb"><a class="link" asp-action="Index">Sensor readings</a><span aria-hidden="true">/</span><span>New</span></nav>
+    <h1 class="page-title" data-split>Add a sensor reading</h1>
+    <p class="page-sub">Use this when a sensor is offline and someone reads the thermometer by hand.</p>
+}
+<section class="content">
+    <div class="wrap">
+        <form asp-action="Create" method="post" class="form-card" data-reveal>
+            <div asp-validation-summary="ModelOnly" role="alert"></div>
+            <div class="form-grid">
+                <div class="field" style="grid-column: 1 / -1"><label asp-for="StorageUnitId">Storage unit</label><select asp-for="StorageUnitId" asp-items="ViewBag.Units"><option value="">Choose a unit</option></select><span asp-validation-for="StorageUnitId" class="field-error"></span></div>
+                <div class="field"><label asp-for="TemperatureC">Temperature (°C)</label><input asp-for="TemperatureC" type="number" step="0.1" min="-40" max="80" inputmode="decimal" /><span asp-validation-for="TemperatureC" class="field-error"></span></div>
+                <div class="field"><label asp-for="HumidityPercent">Humidity (%)</label><input asp-for="HumidityPercent" type="number" step="0.1" min="0" max="100" inputmode="decimal" /><span asp-validation-for="HumidityPercent" class="field-error"></span></div>
+                <div class="field" style="grid-column: 1 / -1"><label asp-for="RecordedAt">Recorded at</label><input asp-for="RecordedAt" type="datetime-local" max="@DateTime.Now.AddMinutes(5).ToString("yyyy-MM-ddTHH:mm")" /><span asp-validation-for="RecordedAt" class="field-error"></span></div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Save reading</button>
+                <a class="link" asp-action="Index">Cancel</a>
+            </div>
+        </form>
     </div>
-    <div class="mb-3"><label asp-for="RecordedAt" class="form-label"></label><input asp-for="RecordedAt" class="form-control" /><span asp-validation-for="RecordedAt" class="text-danger"></span></div>
-    <button class="btn btn-primary">Save reading</button>
-    <a class="btn btn-link" asp-action="Index">Cancel</a>
-</form>
+</section>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -60,6 +60,8 @@ public class StorageApiController(ApplicationDbContext db, InsightService insigh
     {
         if (!await db.StorageUnits.AnyAsync(u => u.Id == input.StorageUnitId))
             return ValidationProblem($"Storage unit {input.StorageUnitId} does not exist.");
+        if (input.RecordedAt > DateTime.Now.AddMinutes(5))
+            return ValidationProblem("RecordedAt cannot be in the future.");
 
         var reading = new SensorReading
         {

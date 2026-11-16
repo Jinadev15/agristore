@@ -1,18 +1,28 @@
 @model CropProfile
 @{ ViewData["Title"] = Model.Id == 0 ? "Add crop" : $"Edit {Model.Name}"; }
-<h1 class="page-title">@ViewData["Title"]</h1>
-<form asp-action="Save" method="post" class="form-panel">
-    <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
-    <div class="row">
-        <div class="col-sm-6 mb-3"><label asp-for="MinTempC" class="form-label"></label><input asp-for="MinTempC" class="form-control" step="0.5" /></div>
-        <div class="col-sm-6 mb-3"><label asp-for="MaxTempC" class="form-label"></label><input asp-for="MaxTempC" class="form-control" step="0.5" /><span asp-validation-for="MaxTempC" class="text-danger"></span></div>
-        <div class="col-sm-6 mb-3"><label asp-for="MinHumidity" class="form-label"></label><input asp-for="MinHumidity" class="form-control" /><span asp-validation-for="MinHumidity" class="text-danger"></span></div>
-        <div class="col-sm-6 mb-3"><label asp-for="MaxHumidity" class="form-label"></label><input asp-for="MaxHumidity" class="form-control" /><span asp-validation-for="MaxHumidity" class="text-danger"></span></div>
+@section Band {
+    <nav class="crumbs" aria-label="Breadcrumb"><a class="link" asp-action="Index">Crops</a><span aria-hidden="true">/</span><span>@(Model.Id == 0 ? "New" : Model.Name)</span></nav>
+    <h1 class="page-title" data-split>@ViewData["Title"]</h1>
+    <p class="page-sub">Changing a range changes the risk score of every lot of this crop.</p>
+}
+<section class="content">
+    <div class="wrap">
+        <form asp-action="Save" method="post" class="form-card" data-reveal>
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" role="alert"></div>
+            <div class="form-grid">
+                <div class="field" style="grid-column: 1 / -1"><label asp-for="Name">Name</label><input asp-for="Name" maxlength="50" /><span asp-validation-for="Name" class="field-error"></span></div>
+                <div class="field"><label asp-for="MinTempC">Min temperature (°C)</label><input asp-for="MinTempC" type="number" step="0.5" inputmode="decimal" /><span asp-validation-for="MinTempC" class="field-error"></span></div>
+                <div class="field"><label asp-for="MaxTempC">Max temperature (°C)</label><input asp-for="MaxTempC" type="number" step="0.5" inputmode="decimal" /><span asp-validation-for="MaxTempC" class="field-error"></span></div>
+                <div class="field"><label asp-for="MinHumidity">Min humidity (%)</label><input asp-for="MinHumidity" type="number" min="0" max="100" inputmode="decimal" /><span asp-validation-for="MinHumidity" class="field-error"></span></div>
+                <div class="field"><label asp-for="MaxHumidity">Max humidity (%)</label><input asp-for="MaxHumidity" type="number" min="0" max="100" inputmode="decimal" /><span asp-validation-for="MaxHumidity" class="field-error"></span></div>
+                <div class="field"><label asp-for="ShelfLifeDays">Shelf life (days)</label><input asp-for="ShelfLifeDays" type="number" min="1" max="3650" /><span asp-validation-for="ShelfLifeDays" class="field-error"></span></div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Save crop</button>
+                <a class="link" asp-action="Index">Cancel</a>
+            </div>
+        </form>
     </div>
-    <div class="mb-3"><label asp-for="ShelfLifeDays" class="form-label"></label><input asp-for="ShelfLifeDays" class="form-control" /><span asp-validation-for="ShelfLifeDays" class="text-danger"></span></div>
-    <button class="btn btn-primary">Save crop</button>
-    <a class="btn btn-link" asp-action="Index">Cancel</a>
-</form>
+</section>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,20 @@
+@model int
+@{
+    var (title, text) = Model switch
+    {
+        404 => ("This page does not exist", "The link may be old, or the record was deleted. Check the address, or go back to the overview."),
+        403 => ("You do not have access here", "This page is for admins. Sign in with an admin account to continue."),
+        _ => ("Something went wrong", "The request could not be completed. Try again in a moment.")
+    };
+    ViewData["Title"] = title;
+}
+<section class="band band--indigo" data-rain>
+    <div class="wrap">
+        <div class="status-code" aria-hidden="true">@Model</div>
+        <h1 class="page-title" style="margin-top: 28px">@title</h1>
+        <p class="page-sub">@text</p>
+        <div class="actions" style="margin-top: 32px">
+            <a class="btn btn--primary" href="@(User.Identity?.IsAuthenticated == true ? "/Dashboard" : "/")">Go to @(User.Identity?.IsAuthenticated == true ? "the overview" : "the home page")</a>
+        </div>
+    </div>
+</section>

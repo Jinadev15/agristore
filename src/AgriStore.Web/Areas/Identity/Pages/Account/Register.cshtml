@@ -1,0 +1,41 @@
+@page
+@model AgriStore.Web.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Create account";
+    ViewData["Auth"] = true;
+}
+<div class="auth">
+    <section class="auth-story" data-rain>
+        <h1 data-split>Join the people who keep the harvest.</h1>
+        <p data-reveal>Staff accounts can record lots, log sensor readings and mark lots dispatched. Admins manage storage units and crop profiles.</p>
+    </section>
+    <section class="auth-form">
+        <form method="post" class="form-card" asp-route-returnUrl="@Model.ReturnUrl" novalidate data-reveal>
+            <h2 class="h2" style="margin-bottom: 24px">Create an account</h2>
+            <div asp-validation-summary="ModelOnly" role="alert"></div>
+            <div class="stack" style="gap: 20px">
+                <div class="field">
+                    <label asp-for="Input.Email">Email</label>
+                    <input asp-for="Input.Email" autocomplete="username" inputmode="email" />
+                    <span asp-validation-for="Input.Email" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Password">Password</label>
+                    <input asp-for="Input.Password" autocomplete="new-password" aria-describedby="pw-hint" />
+                    <span id="pw-hint" class="hint">At least 6 characters, with a capital letter, a small letter and a number.</span>
+                    <span asp-validation-for="Input.Password" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Input.ConfirmPassword">Confirm password</label>
+                    <input asp-for="Input.ConfirmPassword" autocomplete="new-password" />
+                    <span asp-validation-for="Input.ConfirmPassword" class="field-error"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn--primary">Create account</button>
+                <a class="link" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">I already have an account</a>
+            </div>
+        </form>
+    </section>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

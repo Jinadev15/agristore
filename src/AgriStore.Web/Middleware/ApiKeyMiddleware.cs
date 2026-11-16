@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace AgriStore.Web.Middleware;
 
 /// <summary>
@@ -17,7 +20,7 @@ public class ApiKeyMiddleware(RequestDelegate next, IConfiguration config)
         {
             var expected = config["Api:Key"];
             var provided = context.Request.Headers[HeaderName].ToString();
-            if (string.IsNullOrEmpty(expected) || provided != expected)
+            if (string.IsNullOrEmpty(expected) || !KeysMatch(provided, expected))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsJsonAsync(new { error = $"Missing or invalid {HeaderName} header." });
@@ -27,4 +30,8 @@ public class ApiKeyMiddleware(RequestDelegate next, IConfiguration config)
 
         await next(context);
     }
+
+    /// <summary>Constant-time comparison, so response timing does not leak the key.</summary>
+    private static bool KeysMatch(string provided, string expected) =>
+        CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(provided), Encoding.UTF8.GetBytes(expected));
 }

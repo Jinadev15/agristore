@@ -2,52 +2,67 @@
 @{
     var lot = Model.Lot;
     var crop = lot.Crop!;
+    var tone = Model.Risk.Level.ToString().ToLowerInvariant();
     ViewData["Title"] = $"{crop.Name} lot #{lot.Id}";
+    const double r = 70;
+    var circumference = 2 * Math.PI * r;
 }
-<div class="page-head">
-    <div>
-        <h1 class="page-title">@lot.QuantityTonnes.ToString("0.#") t @crop.Name from @lot.FarmerName</h1>
-        <p class="muted">Lot #@lot.Id in <a asp-controller="StorageUnits" asp-action="Details" asp-route-id="@lot.StorageUnitId">@lot.StorageUnit!.Name</a>, stored on @lot.StoredOn.ToString("d MMM yyyy"). Status: @lot.Status.</p>
-    </div>
-    <div class="actions">
-        <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@lot.Id">Edit</a>
-        @if (lot.Status == LotStatus.Stored)
-        {
-            <form asp-action="SetStatus" asp-route-id="@lot.Id" method="post"><input type="hidden" name="status" value="Dispatched" /><button class="btn btn-primary">Mark dispatched</button></form>
-            <form asp-action="SetStatus" asp-route-id="@lot.Id" method="post" onsubmit="return confirm('Record this lot as spoiled?')"><input type="hidden" name="status" value="Spoiled" /><button class="btn btn-outline-danger">Mark spoiled</button></form>
-        }
-        @if (User.IsInRole(DbSeeder.AdminRole))
-        {
-            <form asp-action="Delete" asp-route-id="@lot.Id" method="post" onsubmit="return confirm('Delete this record permanently?')"><button class="btn btn-outline-danger">Delete</button></form>
-        }
-    </div>
-</div>
-
-<div class="row g-4">
-    <section class="col-md-7">
-        <div class="panel verdict edge-@Model.Risk.Level.ToString().ToLower()">
-            <div class="d-flex justify-content-between align-items-start">
-                <h2>Spoilage risk</h2>
-                <partial name="_RiskBadge" model="Model.Risk" />
-            </div>
-            <p class="advice big">@Model.Risk.Recommendation</p>
-            @if (Model.Risk.Reasons.Count > 0)
+@section Band {
+    <nav class="crumbs" aria-label="Breadcrumb"><a class="link" asp-action="Index">Stock</a><span aria-hidden="true">/</span><span>Lot #@lot.Id</span></nav>
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>@lot.QuantityTonnes.ToString("0.##") t @crop.Name.ToLowerInvariant() from @lot.FarmerName</h1>
+            <p class="page-sub">In <a class="link" asp-controller="StorageUnits" asp-action="Details" asp-route-id="@lot.StorageUnitId">@lot.StorageUnit!.Name</a> since @lot.StoredOn.ToString("d MMM yyyy"). Status: @lot.Status.</p>
+        </div>
+        <div class="actions">
+            @if (lot.Status == LotStatus.Stored)
             {
-                <h3>Why</h3>
-                <ul class="reasons">@foreach (var r in Model.Risk.Reasons) { <li>@r</li> }</ul>
+                <form asp-action="SetStatus" asp-route-id="@lot.Id" method="post"><input type="hidden" name="status" value="Dispatched" /><button class="btn btn--primary" type="submit">Mark dispatched</button></form>
+                <form asp-action="SetStatus" asp-route-id="@lot.Id" method="post" data-confirm="Record this lot as spoiled? It leaves active stock."><input type="hidden" name="status" value="Spoiled" /><button class="btn btn--ghost" type="submit">Mark spoiled</button></form>
             }
-            <h3>Shelf life</h3>
+            else
+            {
+                <form asp-action="SetStatus" asp-route-id="@lot.Id" method="post"><input type="hidden" name="status" value="Stored" /><button class="btn btn--ghost" type="submit">Move back to stock</button></form>
+            }
+            <a class="btn btn--ghost" asp-action="Edit" asp-route-id="@lot.Id">Edit</a>
+            @if (User.IsInRole(DbSeeder.AdminRole))
+            {
+                <form asp-action="Delete" asp-route-id="@lot.Id" method="post" data-confirm="Delete this record permanently? This cannot be undone."><button class="btn btn--ghost" type="submit">Delete</button></form>
+            }
+        </div>
+    </div>
+}
+<section class="content">
+    <div class="wrap split">
+        <div class="main card" data-reveal>
+            <h2 class="h2">Spoilage risk</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center; margin-top: 20px">
+                <div class="ring tone-@tone" data-ring="@Model.Risk.Score" role="img" aria-label="Risk @Model.Risk.Score out of 100, @Model.Risk.Level">
+                    <svg viewBox="0 0 160 160" aria-hidden="true">
+                        <circle class="track" cx="80" cy="80" r="@r" />
+                        <circle class="value" cx="80" cy="80" r="@r" style="stroke-dasharray: @circumference.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture); stroke-dashoffset: @((circumference * (1 - Model.Risk.Score / 100.0)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" />
+                    </svg>
+                    <div class="ring-label"><b>@Model.Risk.Score</b><span>@Model.Risk.Level</span></div>
+                </div>
+                <div style="flex: 1 1 260px">
+                    <p class="serif" style="font-size: 26px; line-height: 1.2; font-weight: 600">@Model.Risk.Recommendation</p>
+                    @if (Model.Risk.Reasons.Count > 0)
+                    {
+                        <ul class="reasons" data-stagger>@foreach (var reason in Model.Risk.Reasons) { <li>@reason</li> }</ul>
+                    }
+                </div>
+            </div>
+            <h3 class="h3" style="margin: 32px 0 10px">Shelf life</h3>
             <partial name="_ShelfBar" model="Model" />
         </div>
-    </section>
-    <section class="col-md-5">
-        <div class="panel">
-            <h2>Safe range for @crop.Name</h2>
-            <dl class="pairs">
-                <dt>Temperature</dt><dd>@crop.MinTempC to @crop.MaxTempC °C</dd>
-                <dt>Humidity</dt><dd>@crop.MinHumidity to @crop.MaxHumidity %</dd>
+        <aside class="side card" data-reveal>
+            <h2 class="h2">Safe range for @crop.Name.ToLowerInvariant()</h2>
+            <dl class="pairs" style="margin-top: 20px">
+                <dt>Temperature</dt><dd>@crop.MinTempC.ToString("0.#") to @crop.MaxTempC.ToString("0.#") °C</dd>
+                <dt>Humidity</dt><dd>@crop.MinHumidity.ToString("0") to @crop.MaxHumidity.ToString("0")%</dd>
                 <dt>Shelf life</dt><dd>@crop.ShelfLifeDays days</dd>
+                <dt>Stored</dt><dd>@lot.StoredOn.ToString("d MMM yyyy")</dd>
             </dl>
-        </div>
-    </section>
-</div>
+        </aside>
+    </div>
+</section>

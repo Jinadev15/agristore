@@ -1,63 +1,132 @@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var isLanding = ViewData["Landing"] is true;
+    // Identity's own "Manage account" pages are not restyled page by page: wrap them and map their class names.
+    var identityCompat = ViewContext.RouteData.Values["area"]?.ToString() == "Identity" && ViewData["Auth"] is not true;
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    string On(string name) => controller == name ? "on" : "";
+}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN" class="no-js">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] · AgriStore</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1F2A5C" />
+    <meta name="description" content="AgriStore watches temperature, humidity and shelf life in every storage unit and tells you which lot to move before it spoils." />
+    <title>@(ViewData["Title"] is string t && t.Length > 0 ? $"{t} · AgriStore" : "AgriStore")</title>
+    <script>
+        (function () {
+            var d = document.documentElement;
+            d.classList.remove("no-js");
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+            d.classList.add("js-motion");
+            @if (isLanding)
+            {
+                <text>try { if (!sessionStorage.getItem("agristore-intro")) { d.classList.add("first-visit"); sessionStorage.setItem("agristore-intro", "1"); } } catch (e) { }</text>
+            }
+            // Safety net: if the motion script never loads, show everything.
+            setTimeout(function () { if (!d.classList.contains("motion-ready")) d.classList.remove("js-motion", "first-visit"); }, 3000);
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&display=swap" />
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,100&family=Instrument+Sans:wght@400;500;600&display=swap" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F2A5C'/%3E%3Cpath d='M16 6c-5 6-5 11 0 16 5-5 5-10 0-16Zm0 16v5' fill='none' stroke='%23F2A007' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
 </head>
-<body>
-    <header class="topbar">
-        <nav class="navbar navbar-expand-lg container">
-            <a class="brand" asp-controller="Home" asp-action="Index">
-                <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2c-4 5-4 9 0 13 4-4 4-8 0-13Zm0 13v9M7 12c0 4 2 6 6 6M19 12c0 4-2 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+<body class="@(identityCompat ? "identity-compat" : "")">
+    <a class="skip-link" href="#main">Skip to content</a>
+    @if (isLanding)
+    {
+        <div class="curtain" aria-hidden="true"><span>AgriStore</span></div>
+    }
+
+    <header class="site-header">
+        <div class="wrap">
+            <a class="brand" href="@(signedIn ? "/Dashboard" : "/")">
+                <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3c-5 6-5 11 0 16 5-5 5-10 0-16Zm0 16v6M7 13c0 5 3 7 7 7M21 13c0 5-3 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
                 AgriStore
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div id="nav" class="collapse navbar-collapse">
-                @if (User.Identity?.IsAuthenticated == true)
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span></span><span></span><span></span></button>
+
+            <nav class="nav" id="site-nav" aria-label="Main">
+                @if (signedIn && !isLanding)
                 {
-                    var c = ViewContext.RouteData.Values["controller"]?.ToString();
-                    <ul class="navbar-nav me-auto">
-                        <li><a class="nav-link @(c == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Overview</a></li>
-                        <li><a class="nav-link @(c == "StockLots" ? "active" : "")" asp-controller="StockLots" asp-action="Index">Stock</a></li>
-                        <li><a class="nav-link @(c == "StorageUnits" ? "active" : "")" asp-controller="StorageUnits" asp-action="Index">Storage units</a></li>
-                        <li><a class="nav-link @(c == "Readings" ? "active" : "")" asp-controller="Readings" asp-action="Index">Sensor readings</a></li>
-                        <li><a class="nav-link @(c == "Crops" ? "active" : "")" asp-controller="Crops" asp-action="Index">Crops</a></li>
-                    </ul>
+                    <a class="@On("Dashboard")" href="/Dashboard">Overview</a>
+                    <a class="@On("StockLots")" asp-controller="StockLots" asp-action="Index">Stock</a>
+                    <a class="@On("StorageUnits")" asp-controller="StorageUnits" asp-action="Index">Storage units</a>
+                    <a class="@On("Readings")" asp-controller="Readings" asp-action="Index">Readings</a>
+                    <a class="@On("Crops")" asp-controller="Crops" asp-action="Index">Crops</a>
                 }
-                else
+                else if (isLanding)
                 {
-                    <span class="me-auto"></span>
+                    <a href="#story">The problem</a>
+                    <a href="#steps">How it works</a>
+                    <a href="#guide">Crop guide</a>
+                    <a href="/swagger">API</a>
+                }
+                <span class="nav-ink" aria-hidden="true"></span>
+            </nav>
+
+            <div class="header-tools">
+                @if (signedIn)
+                {
+                    <button class="kbd-btn" type="button" data-cmdk>Search <kbd>Ctrl K</kbd></button>
                 }
                 <partial name="_LoginPartial" />
             </div>
-        </nav>
+        </div>
     </header>
 
-    <main class="container py-4">
+    <main id="main" tabindex="-1">
+        @if (IsSectionDefined("Band"))
+        {
+            <section class="band band--indigo page-band">
+                <div class="wrap">@RenderSection("Band")</div>
+            </section>
+        }
+        @if (identityCompat)
+        {
+            <section class="band band--indigo page-band"><div class="wrap"><h1 class="page-title">Your account</h1></div></section>
+            <div class="wrap content"><div class="form-card" style="max-width: none">@RenderBody()</div></div>
+        }
+        else
+        {
+            @RenderBody()
+        }
+    </main>
+
+    <footer class="site-footer">
+        <div class="wrap">
+            <span>AgriStore. Built for CSE253 by Jinadev R P, S Pradeep and Mirza Ali Baaqar.</span>
+            <span><a class="link" href="/swagger">API documentation</a></span>
+        </div>
+    </footer>
+
+    <div class="toasts" aria-live="polite">
         @if (TempData["Message"] is string message)
         {
-            <div class="flash flash-ok" role="status">@message</div>
+            <div class="toast" role="status"><p>@message</p><button type="button" aria-label="Dismiss">✕</button><span class="timer"></span></div>
         }
         @if (TempData["Error"] is string error)
         {
-            <div class="flash flash-error" role="alert">@error</div>
+            <div class="toast toast--error" role="alert"><p>@error</p><button type="button" aria-label="Dismiss">✕</button><span class="timer"></span></div>
         }
-        @RenderBody()
-    </main>
+    </div>
 
-    <footer class="container footer-note">
-        AgriStore: post-harvest storage monitoring. CSE253 .NET project. <a href="/swagger">API docs</a>
-    </footer>
+    @if (signedIn)
+    {
+        <dialog class="cmdk" id="cmdk" aria-label="Search pages, lots and storage units">
+            <input type="search" placeholder="Search pages, lots, farmers, units" aria-label="Search" autocomplete="off" />
+            <ul role="listbox"></ul>
+        </dialog>
+    }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/motion.js" asp-append-version="true"></script>
 </body>
 </html>

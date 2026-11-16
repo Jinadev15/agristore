@@ -1,20 +1,27 @@
 @model StockLot
-@{ ViewData["Title"] = Model.Id == 0 ? "Record new lot" : $"Edit lot #{Model.Id}"; }
-<h1 class="page-title">@ViewData["Title"]</h1>
-<form asp-action="Save" method="post" class="form-panel">
-    <input type="hidden" asp-for="Id" />
-    <input type="hidden" asp-for="Status" />
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="mb-3"><label asp-for="FarmerName" class="form-label"></label><input asp-for="FarmerName" class="form-control" /><span asp-validation-for="FarmerName" class="text-danger"></span></div>
-    <div class="row">
-        <div class="col-sm-6 mb-3"><label asp-for="CropProfileId" class="form-label"></label><select asp-for="CropProfileId" asp-items="ViewBag.Crops" class="form-select"><option value="">Choose a crop</option></select><span asp-validation-for="CropProfileId" class="text-danger"></span></div>
-        <div class="col-sm-6 mb-3"><label asp-for="StorageUnitId" class="form-label"></label><select asp-for="StorageUnitId" asp-items="ViewBag.Units" class="form-select"><option value="">Choose a unit</option></select><span asp-validation-for="StorageUnitId" class="text-danger"></span></div>
+@{ ViewData["Title"] = Model.Id == 0 ? "Record a new lot" : $"Edit lot #{Model.Id}"; }
+@section Band {
+    <nav class="crumbs" aria-label="Breadcrumb"><a class="link" asp-action="Index">Stock</a><span aria-hidden="true">/</span><span>@(Model.Id == 0 ? "New lot" : $"Lot #{Model.Id}")</span></nav>
+    <h1 class="page-title" data-split>@ViewData["Title"]</h1>
+    <p class="page-sub">The form checks that the storage unit has room before saving.</p>
+}
+<section class="content">
+    <div class="wrap">
+        <form asp-action="Save" method="post" class="form-card" data-reveal>
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" role="alert"></div>
+            <div class="form-grid">
+                <div class="field" style="grid-column: 1 / -1"><label asp-for="FarmerName">Farmer name</label><input asp-for="FarmerName" maxlength="80" autocomplete="off" /><span asp-validation-for="FarmerName" class="field-error"></span></div>
+                <div class="field"><label asp-for="CropProfileId">Crop</label><select asp-for="CropProfileId" asp-items="ViewBag.Crops"><option value="">Choose a crop</option></select><span asp-validation-for="CropProfileId" class="field-error"></span></div>
+                <div class="field"><label asp-for="StorageUnitId">Storage unit</label><select asp-for="StorageUnitId" asp-items="ViewBag.Units"><option value="">Choose a unit</option></select><span asp-validation-for="StorageUnitId" class="field-error"></span></div>
+                <div class="field"><label asp-for="QuantityTonnes">Quantity (tonnes)</label><input asp-for="QuantityTonnes" type="number" min="0.01" step="any" inputmode="decimal" /><span asp-validation-for="QuantityTonnes" class="field-error"></span></div>
+                <div class="field"><label asp-for="StoredOn">Stored on</label><input asp-for="StoredOn" max="@DateTime.Today.ToString("yyyy-MM-dd")" /><span asp-validation-for="StoredOn" class="field-error"></span></div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Save lot</button>
+                <a class="link" href="@(Model.Id == 0 ? Url.Action("Index") : Url.Action("Details", new { id = Model.Id }))">Cancel</a>
+            </div>
+        </form>
     </div>
-    <div class="row">
-        <div class="col-sm-6 mb-3"><label asp-for="QuantityTonnes" class="form-label"></label><input asp-for="QuantityTonnes" class="form-control" /><span asp-validation-for="QuantityTonnes" class="text-danger"></span></div>
-        <div class="col-sm-6 mb-3"><label asp-for="StoredOn" class="form-label"></label><input asp-for="StoredOn" class="form-control" /><span asp-validation-for="StoredOn" class="text-danger"></span></div>
-    </div>
-    <button class="btn btn-primary">Save lot</button>
-    <a class="btn btn-link" asp-action="Index">Cancel</a>
-</form>
+</section>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

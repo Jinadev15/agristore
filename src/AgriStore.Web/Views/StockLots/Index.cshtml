@@ -2,65 +2,79 @@
 @{
     ViewData["Title"] = "Stock";
     var history = (List<StockLot>)ViewBag.History;
+    var minRisk = ViewBag.MinRisk as RiskLevel?;
+    var search = ViewBag.Search as string;
+    var filtered = minRisk is not null || !string.IsNullOrWhiteSpace(search);
 }
-<div class="page-head">
-    <h1 class="page-title">Stock in storage</h1>
-    <a class="btn btn-primary" asp-action="Create">Record new lot</a>
-</div>
-
-<form method="get" class="filters">
-    <input name="search" value="@ViewBag.Search" class="form-control" placeholder="Search farmer or crop" aria-label="Search farmer or crop" />
-    <select name="minRisk" class="form-select" aria-label="Minimum risk">
-        <option value="">Any risk</option>
-        @foreach (var level in Enum.GetValues<RiskLevel>().Skip(1))
-        {
-            <option value="@level" selected="@(ViewBag.MinRisk is RiskLevel l && l == level)">@level and above</option>
-        }
-    </select>
-    <button class="btn btn-outline-primary">Filter</button>
-</form>
-
-@if (Model.Count == 0) { <p class="empty">No lots match. Clear the filters or record a new lot.</p> }
-else
-{
-    <div class="table-responsive">
-    <table class="table data">
-        <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th><th></th></tr></thead>
-        <tbody>
-        @foreach (var x in Model)
-        {
-            <tr>
-                <td><a asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
-                <td>@x.Lot.FarmerName</td>
-                <td>@x.Lot.StorageUnit!.Name</td>
-                <td class="num">@x.Lot.QuantityTonnes.ToString("0.#") t</td>
-                <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
-                <td><partial name="_RiskBadge" model="x.Risk" /></td>
-                <td>
-                    <form asp-action="SetStatus" asp-route-id="@x.Lot.Id" method="post">
-                        <input type="hidden" name="status" value="Dispatched" />
-                        <button class="btn btn-sm btn-outline-primary">Mark dispatched</button>
-                    </form>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+@section Band {
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>Stock in storage</h1>
+            <p class="page-sub">@Model.Count @(Model.Count == 1 ? "lot" : "lots") @(filtered ? "match" : "stored"), worst risk first. @Model.Sum(x => x.Lot.QuantityTonnes).ToString("#,0.#") tonnes.</p>
+        </div>
+        <a class="btn btn--primary" asp-action="Create">Record new lot</a>
     </div>
 }
+<section class="content">
+    <div class="wrap">
+        <form method="get" class="filters" role="search">
+            <input type="search" name="search" value="@search" placeholder="Search farmer or crop" aria-label="Search farmer or crop" maxlength="80" />
+            <button class="btn btn--line" type="submit">Search</button>
+        </form>
+        <div class="chips" style="margin-bottom: 20px" aria-label="Filter by risk">
+            <a class="chip @(minRisk is null ? "on" : "")" asp-route-search="@search">Any risk</a>
+            @foreach (var level in Enum.GetValues<RiskLevel>().Skip(1))
+            {
+                <a class="chip @(minRisk == level ? "on" : "")" asp-route-minRisk="@level" asp-route-search="@search">@level and above</a>
+            }
+        </div>
 
-@if (history.Count > 0)
-{
-    <h2 class="mt-5">Recently closed</h2>
-    <div class="table-responsive">
-    <table class="table data quiet">
-        <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Outcome</th></tr></thead>
-        <tbody>
-        @foreach (var l in history)
+        @if (Model.Count == 0)
         {
-            <tr><td>@l.Crop!.Name</td><td>@l.FarmerName</td><td>@l.StorageUnit!.Name</td><td class="num">@l.QuantityTonnes.ToString("0.#") t</td><td>@l.Status</td></tr>
+            <div class="empty"><strong>@(filtered ? "No lots match." : "No stock recorded yet.")</strong>@(filtered ? "Clear the filters, or search for another farmer or crop." : "Record the first lot to start tracking its shelf life and risk.")</div>
         }
-        </tbody>
-    </table>
+        else
+        {
+            <div class="table-box" data-reveal>
+                <table class="table">
+                    <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+                    <tbody data-stagger>
+                        @foreach (var x in Model)
+                        {
+                            <tr>
+                                <td><a asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
+                                <td>@x.Lot.FarmerName</td>
+                                <td>@x.Lot.StorageUnit!.Name</td>
+                                <td class="num">@x.Lot.QuantityTonnes.ToString("0.##") t</td>
+                                <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
+                                <td><partial name="_RiskBadge" model="x.Risk" /></td>
+                                <td>
+                                    <form asp-action="SetStatus" asp-route-id="@x.Lot.Id" method="post">
+                                        <input type="hidden" name="status" value="Dispatched" />
+                                        <button class="btn btn--line btn--small" type="submit">Dispatch</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (history.Count > 0)
+        {
+            <div class="section-head" style="margin-top: 56px"><h2 class="h2">Recently closed</h2><span class="muted">Dispatched or spoiled</span></div>
+            <div class="table-box">
+                <table class="table table--quiet">
+                    <thead><tr><th>Crop</th><th>Farmer</th><th>Storage unit</th><th class="num">Quantity</th><th>Outcome</th></tr></thead>
+                    <tbody>
+                        @foreach (var l in history)
+                        {
+                            <tr><td><a asp-action="Details" asp-route-id="@l.Id">@l.Crop!.Name</a></td><td>@l.FarmerName</td><td>@l.StorageUnit!.Name</td><td class="num">@l.QuantityTonnes.ToString("0.##") t</td><td>@l.Status</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
-}
+</section>

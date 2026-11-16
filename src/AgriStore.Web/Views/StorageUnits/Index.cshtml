@@ -1,28 +1,41 @@
 @model List<UnitStatus>
-@{ ViewData["Title"] = "Storage units"; }
-<div class="page-head">
-    <h1 class="page-title">Storage units</h1>
-    @if (User.IsInRole(DbSeeder.AdminRole))
-    {
-        <a class="btn btn-primary" asp-action="Create">Add storage unit</a>
-    }
-</div>
-@if (Model.Count == 0) { <p class="empty">No storage units yet. An admin can add the first one.</p> }
-<div class="table-responsive">
-<table class="table data">
-    <thead><tr><th>Name</th><th>Type</th><th>Location</th><th class="num">Filled</th><th class="num">Latest reading</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var s in Model)
-    {
-        <tr>
-            <td><a asp-action="Details" asp-route-id="@s.Unit.Id">@s.Unit.Name</a></td>
-            <td>@s.Unit.Type.Label()</td>
-            <td>@s.Unit.Location</td>
-            <td class="num">@s.StoredTonnes.ToString("#,0.#") / @s.Unit.CapacityTonnes.ToString("#,0") t (@s.FillPercent%)</td>
-            <td class="num">@(s.Latest is null ? "None" : $"{s.Latest.TemperatureC:0.#}°C, {s.Latest.HumidityPercent:0}%")</td>
-            <td>@if (s.LotsOutOfRange > 0) { <span class="tag-warn">@s.LotsOutOfRange out of range</span> }</td>
-        </tr>
-    }
-    </tbody>
-</table>
-</div>
+@{ ViewData["Title"] = "Storage units"; var admin = User.IsInRole(DbSeeder.AdminRole); }
+@section Band {
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>Storage units</h1>
+            <p class="page-sub">@Model.Count @(Model.Count == 1 ? "unit" : "units") holding @Model.Sum(s => s.StoredTonnes).ToString("#,0.#") of @Model.Sum(s => s.Unit.CapacityTonnes).ToString("#,0") tonnes.</p>
+        </div>
+        @if (admin) { <a class="btn btn--primary" asp-action="Create">Add storage unit</a> }
+    </div>
+}
+<section class="content">
+    <div class="wrap">
+        @if (Model.Count == 0)
+        {
+            <div class="empty"><strong>No storage units yet.</strong>@(admin ? "Add the first cold store, silo or godown to start tracking stock." : "An admin needs to add the first storage unit.")</div>
+        }
+        <div class="grid-auto" data-stagger>
+            @foreach (var s in Model)
+            {
+                <a class="card spot unit-card" asp-action="Details" asp-route-id="@s.Unit.Id">
+                    <div style="font-weight: 600; overflow-wrap: anywhere">@s.Unit.Name</div>
+                    <div class="muted" style="font-size: 14px">@s.Unit.Type.Label(), @s.Unit.Location</div>
+                    @if (s.Latest is not null)
+                    {
+                        <div class="temp @(s.LotsOutOfRange > 0 ? "tone-high" : "tone-low")">@s.Latest.TemperatureC.ToString("0.#")°</div>
+                        <div class="meta">@s.Latest.HumidityPercent.ToString("0")% humidity, @s.Latest.RecordedAt.ToString("d MMM, HH:mm")</div>
+                    }
+                    else
+                    {
+                        <div class="temp muted">No data</div>
+                        <div class="meta">No sensor readings yet</div>
+                    }
+                    <div class="bar" role="img" aria-label="@s.FillPercent% full"><span data-bar-to="@Math.Min(s.FillPercent, 100)" style="width:@Math.Min(s.FillPercent, 100)%"></span></div>
+                    <div class="bar-caption">@s.StoredTonnes.ToString("#,0.#") of @s.Unit.CapacityTonnes.ToString("#,0") t (@s.FillPercent%)</div>
+                    @if (s.LotsOutOfRange > 0) { <span class="warn">@s.LotsOutOfRange @(s.LotsOutOfRange == 1 ? "lot" : "lots") outside safe range</span> }
+                </a>
+            }
+        </div>
+    </div>
+</section>

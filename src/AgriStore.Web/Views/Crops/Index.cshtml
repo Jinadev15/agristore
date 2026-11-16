@@ -1,26 +1,39 @@
 @model List<CropProfile>
 @{ ViewData["Title"] = "Crops"; var admin = User.IsInRole(DbSeeder.AdminRole); }
-<div class="page-head">
-    <div>
-        <h1 class="page-title">Crop storage guide</h1>
-        <p class="muted">The safe range each crop needs. Risk scores compare sensor readings against these values.</p>
+@section Band {
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>Crop storage guide</h1>
+            <p class="page-sub">The safe range each crop needs. Risk scores compare sensor readings against these values.</p>
+        </div>
+        @if (admin) { <a class="btn btn--primary" asp-action="Create">Add crop</a> }
     </div>
-    @if (admin) { <a class="btn btn-primary" asp-action="Create">Add crop</a> }
-</div>
-<div class="table-responsive">
-<table class="table data">
-    <thead><tr><th>Crop</th><th class="num">Temperature</th><th class="num">Humidity</th><th class="num">Shelf life</th>@if (admin) { <th></th> }</tr></thead>
-    <tbody>
-    @foreach (var c in Model)
-    {
-        <tr>
-            <td>@c.Name</td>
-            <td class="num">@c.MinTempC to @c.MaxTempC °C</td>
-            <td class="num">@c.MinHumidity to @c.MaxHumidity %</td>
-            <td class="num">@c.ShelfLifeDays days</td>
-            @if (admin) { <td><a asp-action="Edit" asp-route-id="@c.Id">Edit</a></td> }
-        </tr>
-    }
-    </tbody>
-</table>
-</div>
+}
+<section class="content">
+    <div class="wrap">
+        @if (Model.Count == 0)
+        {
+            <div class="empty"><strong>No crop profiles yet.</strong>@(admin ? "Add a crop with its safe temperature, humidity and shelf life." : "An admin needs to add crop profiles.")</div>
+        }
+        else
+        {
+            <div class="table-box" data-reveal>
+                <table class="table">
+                    <thead><tr><th>Crop</th><th class="num">Temperature</th><th class="num">Humidity</th><th class="num">Shelf life</th>@if (admin) { <th><span class="visually-hidden">Edit</span></th> }</tr></thead>
+                    <tbody data-stagger>
+                        @foreach (var c in Model)
+                        {
+                            <tr>
+                                <td class="serif" style="font-size: 20px; font-weight: 600">@c.Name</td>
+                                <td class="num">@c.MinTempC.ToString("0.#") to @c.MaxTempC.ToString("0.#") °C</td>
+                                <td class="num">@c.MinHumidity.ToString("0") to @c.MaxHumidity.ToString("0")%</td>
+                                <td class="num">@c.ShelfLifeDays days</td>
+                                @if (admin) { <td class="num"><a asp-action="Edit" asp-route-id="@c.Id">Edit</a></td> }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

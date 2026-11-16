@@ -21,9 +21,13 @@ public class CropsController(ApplicationDbContext db) : Controller
         return crop is null ? NotFound() : View("Form", crop);
     }
 
+    [HttpGet, Authorize(Roles = DbSeeder.AdminRole)]
+    public IActionResult Save(int? id) => id is > 0 ? RedirectToAction(nameof(Edit), new { id }) : RedirectToAction(nameof(Create));
+
     [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = DbSeeder.AdminRole)]
     public async Task<IActionResult> Save(CropProfile crop)
     {
+        crop.Name = crop.Name?.Trim() ?? "";
         if (crop.MinTempC > crop.MaxTempC)
             ModelState.AddModelError(nameof(crop.MaxTempC), "Max temperature must be at least the min temperature.");
         if (crop.MinHumidity > crop.MaxHumidity)

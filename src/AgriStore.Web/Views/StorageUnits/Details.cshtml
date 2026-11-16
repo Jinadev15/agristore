@@ -3,54 +3,77 @@
     ViewData["Title"] = Model.Name;
     var readings = (List<SensorReading>)ViewBag.Readings;
     var lots = (List<LotWithRisk>)ViewBag.Lots;
+    var stored = lots.Sum(l => l.Lot.QuantityTonnes);
+    var latest = readings.LastOrDefault();
 }
-<div class="page-head">
-    <div>
-        <h1 class="page-title">@Model.Name</h1>
-        <p class="muted">@Model.Type.Label() in @Model.Location. Capacity @Model.CapacityTonnes.ToString("#,0") tonnes.</p>
-    </div>
-    <div class="actions">
-        <a class="btn btn-outline-primary" asp-controller="Readings" asp-action="Create" asp-route-storageUnitId="@Model.Id">Add reading</a>
-        <a class="btn btn-primary" asp-controller="StockLots" asp-action="Create" asp-route-storageUnitId="@Model.Id">Store a lot here</a>
-        @if (User.IsInRole(DbSeeder.AdminRole))
-        {
-            <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
-            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Delete this storage unit and its readings?')">
-                <button class="btn btn-outline-danger">Delete</button>
-            </form>
-        }
-    </div>
-</div>
-
-<section class="panel">
-    <h2>Last 7 days</h2>
-    @if (readings.Count == 0) { <p class="empty">No readings in the last 7 days. Add one or connect a sensor to <code>POST /api/readings</code>.</p> }
-    else { <canvas id="chart" height="110" aria-label="Temperature and humidity over the last 7 days"></canvas> }
-</section>
-
-<section class="mt-4">
-    <h2>Lots in this unit</h2>
-    @if (lots.Count == 0) { <p class="empty">Nothing stored here right now.</p> }
-    else
-    {
-        <div class="table-responsive">
-        <table class="table data">
-            <thead><tr><th>Crop</th><th>Farmer</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th></tr></thead>
-            <tbody>
-            @foreach (var x in lots)
-            {
-                <tr>
-                    <td><a asp-controller="StockLots" asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
-                    <td>@x.Lot.FarmerName</td>
-                    <td class="num">@x.Lot.QuantityTonnes.ToString("0.#") t</td>
-                    <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
-                    <td><partial name="_RiskBadge" model="x.Risk" /></td>
-                </tr>
-            }
-            </tbody>
-        </table>
+@section Band {
+    <nav class="crumbs" aria-label="Breadcrumb"><a class="link" asp-action="Index">Storage units</a><span aria-hidden="true">/</span><span>@Model.Name</span></nav>
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>@Model.Name</h1>
+            <p class="page-sub">@Model.Type.Label() in @Model.Location. @stored.ToString("#,0.#") of @Model.CapacityTonnes.ToString("#,0") tonnes used.</p>
         </div>
-    }
+        <div class="actions">
+            <a class="btn btn--primary" asp-controller="StockLots" asp-action="Create" asp-route-storageUnitId="@Model.Id">Store a lot here</a>
+            <a class="btn btn--ghost" asp-controller="Readings" asp-action="Create" asp-route-storageUnitId="@Model.Id">Add reading</a>
+            @if (User.IsInRole(DbSeeder.AdminRole))
+            {
+                <a class="btn btn--ghost" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Delete @Model.Name and all of its sensor readings? This cannot be undone.">
+                    <button class="btn btn--ghost" type="submit">Delete</button>
+                </form>
+            }
+        </div>
+    </div>
+}
+<section class="content">
+    <div class="wrap stack" style="gap: 32px">
+        <div class="card" data-reveal>
+            <div class="section-head">
+                <h2 class="h2">Last 7 days</h2>
+                @if (latest is not null) { <span class="muted">Latest: @latest.TemperatureC.ToString("0.#") °C, @latest.HumidityPercent.ToString("0")% at @latest.RecordedAt.ToString("d MMM, HH:mm")</span> }
+            </div>
+            @if (readings.Count == 0)
+            {
+                <div class="empty"><strong>No readings in the last 7 days.</strong>Add one by hand, or connect a sensor to <code>POST /api/readings</code>.</div>
+            }
+            else
+            {
+                <div style="position: relative; height: 320px">
+                    <canvas id="chart" role="img" aria-label="Temperature and humidity over the last 7 days, @readings.Count readings"></canvas>
+                </div>
+                <p id="chart-fallback" class="muted" hidden>The chart could not load. Latest readings are on the Readings page.</p>
+            }
+        </div>
+
+        <div>
+            <div class="section-head"><h2 class="h2">Lots in this unit</h2><span class="muted">@lots.Count stored</span></div>
+            @if (lots.Count == 0)
+            {
+                <div class="empty"><strong>Nothing stored here right now.</strong>Record a lot to start tracking its shelf life.</div>
+            }
+            else
+            {
+                <div class="table-box" data-reveal>
+                    <table class="table">
+                        <thead><tr><th>Crop</th><th>Farmer</th><th class="num">Quantity</th><th>Shelf life</th><th>Risk</th></tr></thead>
+                        <tbody data-stagger>
+                            @foreach (var x in lots)
+                            {
+                                <tr>
+                                    <td><a asp-controller="StockLots" asp-action="Details" asp-route-id="@x.Lot.Id">@x.Lot.Crop!.Name</a></td>
+                                    <td>@x.Lot.FarmerName</td>
+                                    <td class="num">@x.Lot.QuantityTonnes.ToString("0.##") t</td>
+                                    <td class="shelf-cell"><partial name="_ShelfBar" model="x" /></td>
+                                    <td><partial name="_RiskBadge" model="x.Risk" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </section>
 
 @section Scripts {
@@ -58,25 +81,41 @@
     {
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
         <script>
-            const data = @Json.Serialize(readings.Select(r => new { t = r.RecordedAt.ToString("dd MMM HH:mm"), temp = r.TemperatureC, hum = r.HumidityPercent }));
-            new Chart(document.getElementById('chart'), {
-                type: 'line',
-                data: {
-                    labels: data.map(d => d.t),
-                    datasets: [
-                        { label: 'Temperature (°C)', data: data.map(d => d.temp), borderColor: '#b5541c', yAxisID: 'y', tension: .3, pointRadius: 0 },
-                        { label: 'Humidity (%)', data: data.map(d => d.hum), borderColor: '#2f6b8a', yAxisID: 'y1', tension: .3, pointRadius: 0 }
-                    ]
-                },
-                options: {
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        x: { ticks: { maxTicksLimit: 7 } },
-                        y: { position: 'left', title: { display: true, text: '°C' } },
-                        y1: { position: 'right', title: { display: true, text: '% RH' }, grid: { drawOnChartArea: false } }
+            (() => {
+                const canvas = document.getElementById("chart");
+                if (!window.Chart) { canvas.parentElement.hidden = true; document.getElementById("chart-fallback").hidden = false; return; }
+                const data = @Json.Serialize(readings.Select(r => new { t = r.RecordedAt.ToString("d MMM HH:mm"), temp = r.TemperatureC, hum = r.HumidityPercent }));
+                const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+                Chart.defaults.font.family = "'Instrument Sans', system-ui, sans-serif";
+                Chart.defaults.color = "#4A4866";
+                // Each point draws in after the one before it, so the line traces across the chart.
+                const step = 1400 / data.length;
+                const progressive = {
+                    x: { type: "number", easing: "linear", duration: step, from: NaN, delay: (c) => c.type === "data" && !c.xStarted ? (c.xStarted = true, c.index * step) : 0 },
+                    y: { type: "number", easing: "linear", duration: step, from: (c) => c.index === 0 ? c.chart.scales.y.getPixelForValue(0) : c.chart.getDatasetMeta(c.datasetIndex).data[c.index - 1]?.getProps(["y"], true).y, delay: (c) => c.type === "data" && !c.yStarted ? (c.yStarted = true, c.index * step) : 0 }
+                };
+                new Chart(canvas, {
+                    type: "line",
+                    data: {
+                        labels: data.map(d => d.t),
+                        datasets: [
+                            { label: "Temperature (°C)", data: data.map(d => d.temp), borderColor: "#B44A00", backgroundColor: "#B44A00", yAxisID: "y", tension: .35, pointRadius: 0, borderWidth: 2.5 },
+                            { label: "Humidity (%)", data: data.map(d => d.hum), borderColor: "#1F2A5C", backgroundColor: "#1F2A5C", yAxisID: "y1", tension: .35, pointRadius: 0, borderWidth: 2.5 }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        animation: reduce ? false : progressive,
+                        interaction: { mode: "index", intersect: false },
+                        plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { backgroundColor: "#1A1530", padding: 12 } },
+                        scales: {
+                            x: { ticks: { maxTicksLimit: 7 }, grid: { display: false } },
+                            y: { position: "left", title: { display: true, text: "°C" }, grid: { color: "rgba(26,21,48,.08)" } },
+                            y1: { position: "right", title: { display: true, text: "% humidity" }, grid: { drawOnChartArea: false } }
+                        }
                     }
-                }
-            });
+                });
+            })();
         </script>
     }
 }

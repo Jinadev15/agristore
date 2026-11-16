@@ -1,24 +1,16 @@
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 
-<ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index">
-            @User.Identity?.Name
-            @if (User.IsInRole(DbSeeder.AdminRole)) { <span class="role-tag">Admin</span> }
-        </a>
-    </li>
-    <li class="nav-item">
-        <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button type="submit" class="nav-link btn btn-link">Sign out</button>
-        </form>
-    </li>
+    <a class="user-chip" asp-area="Identity" asp-page="/Account/Manage/Index" title="Your account">@User.Identity?.Name</a>
+    @if (User.IsInRole(DbSeeder.AdminRole)) { <span class="role-tag">Admin</span> }
+    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+        <button type="submit" class="btn btn--ghost btn--small">Sign out</button>
+    </form>
 }
 else
 {
-    <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Create account</a></li>
-    <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Sign in</a></li>
+    <a class="user-chip" asp-area="Identity" asp-page="/Account/Login">Sign in</a>
+    <a class="btn btn--primary btn--small" asp-area="Identity" asp-page="/Account/Register">Create account</a>
 }
-</ul>

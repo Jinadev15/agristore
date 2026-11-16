@@ -1,26 +1,37 @@
 @model List<SensorReading>
-@{ ViewData["Title"] = "Sensor readings"; }
-<div class="page-head">
-    <h1 class="page-title">Sensor readings</h1>
-    <a class="btn btn-primary" asp-action="Create">Add reading</a>
-</div>
-<form method="get" class="filters">
-    <select name="storageUnitId" asp-items="ViewBag.Units" class="form-select" aria-label="Storage unit"><option value="">All storage units</option></select>
-    <button class="btn btn-outline-primary">Show</button>
-</form>
-<p class="muted">Latest 100 readings. Sensors can send readings to <code>POST /api/readings</code> with an <code>X-Api-Key</code> header.</p>
-@if (Model.Count == 0) { <p class="empty">No readings yet.</p> }
-else
-{
-    <div class="table-responsive">
-    <table class="table data">
-        <thead><tr><th>Recorded at</th><th>Storage unit</th><th class="num">Temperature</th><th class="num">Humidity</th></tr></thead>
-        <tbody>
-        @foreach (var r in Model)
-        {
-            <tr><td>@r.RecordedAt.ToString("d MMM yyyy, HH:mm")</td><td>@r.StorageUnit!.Name</td><td class="num">@r.TemperatureC.ToString("0.0") °C</td><td class="num">@r.HumidityPercent.ToString("0.0") %</td></tr>
-        }
-        </tbody>
-    </table>
+@{ ViewData["Title"] = "Sensor readings"; var unitId = Context.Request.Query["storageUnitId"].ToString(); }
+@section Band {
+    <div class="page-band__row">
+        <div>
+            <h1 class="page-title" data-split>Sensor readings</h1>
+            <p class="page-sub">The latest 100 readings. Sensors post to <code>POST /api/readings</code> with an <code>X-Api-Key</code> header.</p>
+        </div>
+        <a class="btn btn--primary" asp-action="Create" asp-route-storageUnitId="@unitId">Add reading</a>
     </div>
 }
+<section class="content">
+    <div class="wrap">
+        <form method="get" class="filters">
+            <select name="storageUnitId" asp-items="ViewBag.Units" aria-label="Storage unit" onchange="this.form.requestSubmit()"><option value="">All storage units</option></select>
+            <noscript><button class="btn btn--line" type="submit">Show</button></noscript>
+        </form>
+        @if (Model.Count == 0)
+        {
+            <div class="empty"><strong>No readings yet.</strong>Add one by hand, or connect a sensor to the API.</div>
+        }
+        else
+        {
+            <div class="table-box" data-reveal>
+                <table class="table">
+                    <thead><tr><th>Recorded at</th><th>Storage unit</th><th class="num">Temperature</th><th class="num">Humidity</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr><td>@r.RecordedAt.ToString("d MMM yyyy, HH:mm")</td><td><a asp-controller="StorageUnits" asp-action="Details" asp-route-id="@r.StorageUnitId">@r.StorageUnit!.Name</a></td><td class="num">@r.TemperatureC.ToString("0.0") °C</td><td class="num">@r.HumidityPercent.ToString("0.0")%</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

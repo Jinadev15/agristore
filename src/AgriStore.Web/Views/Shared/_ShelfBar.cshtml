@@ -2,12 +2,12 @@
 @{
     var total = Model.Lot.Crop!.ShelfLifeDays;
     var used = Math.Clamp(total - Model.Risk.DaysLeft, 0, total);
-    var pct = Math.Round(100.0 * used / total);
+    var pct = total == 0 ? 100 : Math.Round(100.0 * used / total);
 }
-<div class="shelf" role="img" aria-label="@used of @total shelf-life days used">
-    <div class="shelf-fill risk-bg-@Model.Risk.Level.ToString().ToLower()" style="width:@pct%"></div>
+<div class="bar bar--@Model.Risk.Level.ToString().ToLowerInvariant()" role="img" aria-label="@used of @total shelf-life days used">
+    <span data-bar-to="@pct" style="width:@pct%"></span>
 </div>
-<div class="shelf-caption">
-    @if (Model.Risk.DaysLeft > 0) { <text>@Model.Risk.DaysLeft days left of @total</text> }
+<div class="bar-caption">
+    @if (Model.Risk.DaysLeft > 0) { <text>@Model.Risk.DaysLeft of @total days left</text> }
     else { <text>@(-Model.Risk.DaysLeft) days past shelf life</text> }
 </div>

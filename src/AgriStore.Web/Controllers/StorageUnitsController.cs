@@ -36,9 +36,26 @@ public class StorageUnitsController(ApplicationDbContext db, InsightService insi
         return unit is null ? NotFound() : View("Form", unit);
     }
 
+    [HttpGet, Authorize(Roles = DbSeeder.AdminRole)]
+    public IActionResult Save(int? id) => id is > 0 ? RedirectToAction(nameof(Edit), new { id }) : RedirectToAction(nameof(Create));
+
     [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = DbSeeder.AdminRole)]
     public async Task<IActionResult> Save(StorageUnit unit)
     {
+        unit.Name = unit.Name?.Trim() ?? "";
+        if (await db.StorageUnits.AnyAsync(u => u.Name == unit.Name && u.Id != unit.Id))
+            ModelState.AddModelError(nameof(unit.Name), "A storage unit with this name already exists.");
+
+        if (unit.Id != 0)
+        {
+            var stored = await db.StockLots
+                .Where(l => l.StorageUnitId == unit.Id && l.Status == LotStatus.Stored)
+                .SumAsync(l => l.QuantityTonnes);
+            if (unit.CapacityTonnes < stored)
+                ModelState.AddModelError(nameof(unit.CapacityTonnes),
+                    $"This unit already holds {stored:0.##} t. Capacity cannot go below that.");
+        }
+
         if (!ModelState.IsValid) return View("Form", unit);
 
         if (unit.Id == 0) db.StorageUnits.Add(unit);

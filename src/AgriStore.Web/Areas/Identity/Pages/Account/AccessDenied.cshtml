@@ -1,0 +1,17 @@
+@page
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@{
+    ViewData["Title"] = "Admins only";
+    ViewData["Auth"] = true;
+}
+<section class="band band--indigo" data-rain>
+    <div class="wrap">
+        <div class="status-code" aria-hidden="true">403</div>
+        <h1 class="page-title" style="margin-top: 28px">This page is for admins.</h1>
+        <p class="page-sub">Your account can record lots and readings. Managing storage units and crop profiles needs an admin account.</p>
+        <div class="actions" style="margin-top: 32px">
+            <a class="btn btn--primary" href="/Dashboard">Back to the overview</a>
+            <a class="btn btn--ghost" href="/Identity/Account/Login">Sign in as someone else</a>
+        </div>
+    </div>
+</section>

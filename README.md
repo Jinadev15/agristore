@@ -34,6 +34,16 @@ only when the produce has already started to rot.
 
 Score 0-29 Low, 30-54 Medium, 55-79 High, 80-100 Critical.
 
+## Design
+
+The interface uses a "Monsoon" design system: colour blocks of indigo, saffron, paddy green and
+mist, Fraunces for display type and Instrument Sans for text. Each colour has one job (saffron is
+the action colour, crimson and rust mark risk). Motion is built with GSAP and ScrollTrigger:
+monsoon rain behind the indigo bands, headline words rising from masks, counters, bands that open
+on scroll, a risk ring, buttons whose fill sweeps in from the pointer, cross-page view transitions,
+toasts and a Ctrl+K command menu. Everything respects `prefers-reduced-motion` and stays readable
+without JavaScript. Design spec: `docs/superpowers/specs/2026-11-16-monsoon-redesign-design.md`.
+
 ## Run it
 
 Needs the .NET 10 SDK. No database install needed: it uses SQLite and creates and fills
@@ -44,7 +54,7 @@ cd src/AgriStore.Web
 dotnet run
 ```
 
-Open http://localhost:5283
+Open http://localhost:5283 (public landing page; the dashboard is at `/Dashboard` after signing in)
 
 | Account | Email | Password | Can do |
 |---|---|---|---|
