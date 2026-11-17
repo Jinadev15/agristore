@@ -20,6 +20,7 @@ public class HomeController(InsightService insights, ApplicationDbContext db) : 
 
     /// <summary>Styled page for 404, 403 and other status codes (wired via UseStatusCodePagesWithReExecute).</summary>
     [Route("Home/Status/{code:int}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public IActionResult Status(int code)
     {
         Response.StatusCode = code;

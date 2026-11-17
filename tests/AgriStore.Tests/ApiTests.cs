@@ -82,6 +82,14 @@ public class ApiTests : IClassFixture<ApiTests.AppFactory>
     }
 
     [Fact]
+    public async Task SwaggerDocument_Loads()
+    {
+        var response = await Client(null).GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Dashboard_RequiresSignIn()
     {
         var response = await Client(null).GetAsync("/Dashboard");
