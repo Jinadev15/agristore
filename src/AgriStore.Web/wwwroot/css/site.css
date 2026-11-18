@@ -370,7 +370,6 @@ a.card:hover { transform: translateY(-4px); color: inherit; }
 .auth-story p { margin-top: 20px; color: #D9DCEC; max-width: 40ch; position: relative; z-index: 1; }
 .auth-form { display: flex; align-items: center; justify-content: center; padding: clamp(32px, 6vw, 80px) var(--gutter); background: var(--mist); }
 .auth-form .form-card { width: 100%; max-width: 460px; }
-.demo-note { margin-top: 22px; padding: 14px 16px; background: var(--mist); border-radius: var(--radius); font-size: 14px; }
 @media (max-width: 860px) { .auth { grid-template-columns: 1fr; } .auth-story { min-height: 280px; } }
 
 /* Identity "Manage account" pages still use Bootstrap class names: give them a matching look */
